@@ -199,48 +199,53 @@ class AdvancedSecurityAnalyzer:
         return result
 
     def perform_ai_analysis(self, input_text: str) -> Dict:
-        """Send input to LLM and let it decide if threat or safe."""
+        """Send input to LLM and let it analyze and decide boldly."""
         try:
-            # Prompt LLM to make a decision with structured output
+            # Let LLM analyze freely and make its own bold decision
             ollama.host = self.ollama_host
 
-            prompt = f"""Analyze this login input for security threats. Respond with ONLY one word first (THREAT or SAFE), then explain your decision.
+            prompt = f"""You are a security analyst. Analyze the following login input for potential security threats such as SQL injection, XSS attacks, command injection, or other malicious patterns.
 
 Input: {input_text}
 
-Response format: Start with THREAT or SAFE, then provide explanation."""
+Provide your complete analysis and reasoning. Think through whether this input appears malicious or legitimate. After your analysis, you MUST end your response with a clear final decision on a new line: either "THREAT" or "SAFE" - be bold and decisive."""
 
             response = ollama.generate(
                 model=self.ai_model,
                 prompt=prompt,
-                options={"temperature": 0.8}
+                options={"temperature": 0.3}
             )
 
-            # Parse LLM response to extract decision
+            # Get LLM's response
             llm_response = response['response'].strip()
 
-            # Check if response starts with THREAT or SAFE
+            # Look for LLM's decision (THREAT or SAFE) anywhere in the response
+            llm_upper = llm_response.upper()
+
             is_threat = False
             threat_type = 'LLM_ANALYSIS_SAFE'
 
-            if llm_response.upper().startswith('THREAT'):
+            # Check if LLM concluded with THREAT or SAFE
+            if 'THREAT' in llm_upper:
                 is_threat = True
                 threat_type = 'LLM_DETECTED_THREAT'
                 logger.info(f"LLM detected threat in input: {input_text[:50]}...")
-            elif llm_response.upper().startswith('SAFE'):
+            elif 'SAFE' in llm_upper:
                 is_threat = False
                 threat_type = 'LLM_ANALYSIS_SAFE'
                 logger.info(f"LLM classified input as safe: {input_text[:50]}...")
             else:
-                # If LLM doesn't follow format, default to safe and log warning
-                logger.warning(f"LLM response didn't start with THREAT/SAFE: {llm_response[:100]}")
+                # If LLM didn't provide clear decision, default to uncertain (safe)
+                logger.warning(f"LLM didn't provide THREAT/SAFE decision: {llm_response[:100]}")
                 is_threat = False
                 threat_type = 'LLM_ANALYSIS_UNCERTAIN'
+
+            decision = 'THREAT' if is_threat else 'SAFE'
 
             return {
                 'threat_detected': is_threat,
                 'threat_type': threat_type,
-                'explanation': f'LLM Decision: {llm_response[:200]}',
+                'explanation': f'LLM Decision ({decision}): {llm_response}',
                 'mitigation_advice': 'Blocked by AI analysis' if is_threat else 'Allowed by AI analysis',
                 'ai_response': llm_response
             }
