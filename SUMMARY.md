@@ -6,7 +6,7 @@ This repository now includes a comprehensive programming course built around the
 
 ## 📚 Documentation Created
 
-### Main Guides (6 documents, ~18,000 words)
+### Main Guides (7 documents, ~18,000 words)
 
 1. **README.md** - Main project README with links to all learning materials
    - Project overview
@@ -63,7 +63,7 @@ This repository now includes a comprehensive programming course built around the
    - Achievement tracking
    - ~6,000 words
 
-## 💻 Example Scripts (5 scripts, ~750 lines)
+## 💻 Example Scripts (5 scripts, ~940 lines)
 
 Located in `examples/` directory:
 
