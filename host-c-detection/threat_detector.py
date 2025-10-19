@@ -1,12 +1,12 @@
 """
-Hybrid Threat Detection System
--------------------------------
-This module implements a hybrid security threat detection system that combines:
-1. Regex-based pattern matching (fast, signature-based detection)
-2. AI/LLM-based analysis (intelligent, context-aware detection)
+LLM-Based Threat Detection System
+----------------------------------
+This module implements an LLM-powered security threat detection system:
+1. Whitelist check for legitimate login credentials (bypass LLM)
+2. AI/LLM-based analysis for all other inputs (LLM decides independently)
 
-The system analyzes user inputs for security threats like SQL injection,
-XSS, command injection, and other web application attacks.
+The LLM analyzes user inputs and determines if they are THREAT or SAFE.
+All security decisions are made by the LLM server without preset patterns.
 """
 
 from flask import Flask, request, jsonify
@@ -30,42 +30,23 @@ logger = logging.getLogger(__name__)
 
 class AdvancedSecurityAnalyzer:
     """
-    Advanced Security Analyzer - Core Threat Detection Engine
+    Advanced Security Analyzer - LLM-Based Threat Detection Engine
 
-    Hybrid threat detection combining:
-    - Regex Pattern Matching: Fast, deterministic detection
-    - AI/LLM Analysis: Intelligent, context-aware detection
+    LLM-powered threat detection:
+    - Whitelist Check: Bypass LLM for known legitimate logins
+    - AI/LLM Analysis: All other inputs analyzed by LLM server
 
     Detection Flow:
     1. Input normalization
-    2. Whitelist check (legitimate logins)
-    3. Regex signature scanning
-    4. AI analysis (if no regex match)
+    2. Whitelist check (legitimate logins bypass LLM)
+    3. LLM analysis (LLM decides THREAT or SAFE independently)
     """
 
     def __init__(self):
-        """Initialize the security analyzer with AI configuration and threat signatures."""
+        """Initialize the security analyzer with AI configuration and legitimate login patterns."""
         # AI Configuration
         self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
         self.ai_model = os.getenv('OLLAMA_MODEL', 'phi:2.7b')
-
-        # Security signature patterns
-        self.security_signatures = {
-            'SQL_INJECTION': [
-                r"(?i)'\s*or\s*'",  # ' or '
-                r"(?i)'\s*or\s+\d+\s*=\s*\d+",  # ' or 1=1
-                r"(?i)'.*?--",  # SQL comment injection
-                r"(?i);\s*drop\s+table",  # DROP TABLE
-                r"(?i);\s*delete\s+from",  # DELETE FROM
-                r"(?i)union\s+select",  # UNION SELECT
-                r"(?is)\bu(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?n(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?i(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?o(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?n(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?s(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?e(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?l(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?e(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?c(?:\/\*![0-9]*.*?\*\/|\/\*.*?\*\/|%0b|\/\/|[#-][^\r\n]*|\s|\\|\/)*?t\b",
-                r"(?is)\/\*!\s*(?:\d+\s*)?(?:union|select)[\s\S]*?\*\/",  # MySQL comments
-                r"(?i)\b(?:or|and)\b\s*[\(\s]*(?:\d+|0x[0-9a-f]+|'[^']*'|\"[^\"]*\")\s*(?:=|<>|!=|<=>)\s*(?:\d+|0x[0-9a-f]+|'[^']*'|\"[^\"]*\")",
-                r"(?i)\b(?:or|and)\b\s*[\(\s]*(?:\d+|'[^']*'|\"[^\"]*\")\s+is\s+(?:not\s+)?null",
-                r"(?i)\b(?:sleep|benchmark)\s*\(",  # Time-based blind SQLi
-                r"(?i)(?:^|[?&])id=[^&]*(?:&id=)"  # Parameter pollution
-            ],
-        }
 
         # Legitimate authentication patterns (whitelist)
         self.legitimate_auth_patterns = {
@@ -129,13 +110,12 @@ class AdvancedSecurityAnalyzer:
 
     def comprehensive_security_scan(self, input_text: str, ip_address: str = None) -> Optional[Dict]:
         """
-        Perform comprehensive security threat analysis using hybrid detection.
+        Perform security threat analysis with LLM-based detection.
 
         Detection Flow:
         1. Input Normalization
-        2. Whitelist Check
-        3. Regex Signature Scanning
-        4. AI Analysis (if no match)
+        2. Whitelist Check (legitimate logins bypass LLM)
+        3. LLM Analysis (all other inputs sent to LLM server)
         """
         start_time = time.time()
 
@@ -143,9 +123,8 @@ class AdvancedSecurityAnalyzer:
         decoded_input = unquote(input_text)
         normalized_input = decoded_input.replace('+', ' ')
         normalized_input = re.sub(r'\s+', ' ', normalized_input).strip()
-        input_lower = normalized_input.lower()
 
-        # Whitelist check
+        # Whitelist check - legitimate logins bypass LLM
         if self.validate_legitimate_login(normalized_input):
             processing_time = time.time() - start_time
             result = {
@@ -153,33 +132,16 @@ class AdvancedSecurityAnalyzer:
                 'threat_type': 'BENIGN_LOGIN',
                 'explanation': 'Detected legitimate login pattern',
                 'mitigation_advice': 'Input appears to be legitimate login attempt',
-                'detection_method': 'legitimate_pattern_regex',
+                'detection_method': 'legitimate_pattern_whitelist',
                 'processing_time': processing_time,
                 'model_version': 'advanced-security-v1.0',
-                'pattern_matched': 'legitimate_login_pattern'
+                'pattern_matched': 'legitimate_login_pattern',
+                'api_called': False
             }
             self.refresh_stats('legitimate_login', processing_time)
             return result
 
-        # Regex signature scanning
-        for threat_type, patterns in self.security_signatures.items():
-            for pattern in patterns:
-                if re.search(pattern, input_lower, re.IGNORECASE):
-                    processing_time = time.time() - start_time
-                    result = {
-                        'threat_detected': True,
-                        'threat_type': threat_type,
-                        'explanation': f'Detected {threat_type.lower()} pattern',
-                        'mitigation_advice': f'Input blocked due to {threat_type.lower()} detection',
-                        'detection_method': 'security_signatures',
-                        'processing_time': processing_time,
-                        'model_version': 'advanced-security-v1.0',
-                        'pattern_matched': pattern,
-                        'api_called': False
-                    }
-                    return result
-
-        # AI analysis (if no regex match)
+        # All other inputs go directly to LLM for analysis
         ai_result = self.perform_ai_analysis(normalized_input)
         total_processing_time = time.time() - start_time
 
@@ -188,7 +150,7 @@ class AdvancedSecurityAnalyzer:
             'threat_type': ai_result['threat_type'],
             'explanation': ai_result['explanation'],
             'mitigation_advice': ai_result['mitigation_advice'],
-            'detection_method': 'hybrid_ai_analysis',
+            'detection_method': 'llm_analysis',
             'processing_time': total_processing_time,
             'model_version': 'advanced-security-v1.0',
             'pattern_matched': 'none',
@@ -381,19 +343,19 @@ def retrieve_statistics():
         return jsonify({
             'service': 'advanced-security',
             'status': 'healthy',
+            'detection_mode': 'llm-based',
             'total_requests': total,
             'threats_blocked': threats_blocked,
             'safe_inputs': safe_inputs,
             'threat_detection_rate': (threats_blocked / max(total, 1)) * 100,
-            'hybrid_mode': True,
-            'ai_enabled': True,
+            'llm_enabled': True,
             'performance_metrics': {
                 'avg_processing_time': avg_processing_time,
                 'min_processing_time': min_processing_time,
                 'max_processing_time': max_processing_time
             },
-            'ai_usage_metrics': {
-                'total_ai_calls': ai_calls
+            'llm_usage_metrics': {
+                'total_llm_calls': ai_calls
             }
         })
 
@@ -503,14 +465,14 @@ def service_health_status():
     return jsonify({
         'status': 'healthy',
         'service': 'advanced-security',
-        'mode': 'hybrid-detection'
+        'mode': 'llm-based-detection'
     })
 
 
 if __name__ == '__main__':
     print("🚀 Starting Advanced Security Detection Service...")
-    print("🔍 Hybrid detection: Security signatures + AI enabled")
-    print("💡 Detection flow: Signatures first → AI analysis if no match")
+    print("🤖 LLM-based detection: All inputs analyzed by AI")
+    print("💡 Detection flow: Whitelist check → LLM decides (THREAT or SAFE)")
     print("🌐 Server listening on http://0.0.0.0:8081")
     print("\n📋 Available endpoints:")
     print("   POST   /analyze              - Analyze input for threats")
