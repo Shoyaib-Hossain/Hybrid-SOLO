@@ -178,7 +178,7 @@ Input: {input_text}"""
                 options={"temperature": 0.7}
             )
 
-            # Get LLM's complete response - use it directly without parsing
+            # Get LLM's complete response 
             llm_response = response['response'].strip()
             
             # Log the LLM's analysis
