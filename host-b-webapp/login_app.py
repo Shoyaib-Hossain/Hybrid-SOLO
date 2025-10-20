@@ -197,7 +197,6 @@ def process_authentication():
     attempt_record = auth_tracker.record_attempt(username, password, ip_address)
 
     # Login successful (never blocked)
-    flash('Authentication successful!', 'success')
     return render_template('success.html', username=username)
 
 

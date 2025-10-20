@@ -11,7 +11,7 @@
             padding: 20px; 
             background: #f5f6fa;
         }
-        .dashboard { max-width: 1400px; margin: 0 auto; }
+        .dashboard { max-width: 1800px; margin: 0 auto; }
         .header { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; 
@@ -52,6 +52,7 @@
             border-radius: 12px;
             overflow-x: auto;
             box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            width: 100%;
         }
         .attempts-header {
             background: #34495e;
@@ -88,37 +89,58 @@
         .attempts-table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: auto;
+            table-layout: fixed;
+            min-width: 1600px;
         }
         .attempts-table th {
             background: #ecf0f1;
-            padding: 12px;
+            padding: 12px 8px;
             text-align: left;
             font-weight: 600;
             white-space: nowrap;
+            font-size: 0.9em;
         }
         .attempts-table td {
-            padding: 10px;
+            padding: 10px 8px;
             border-bottom: 1px solid #ecf0f1;
             word-wrap: break-word;
-            max-width: 250px;
+            vertical-align: top;
         }
-        .attempts-table td:nth-child(1) {
+        /* Time */
+        .attempts-table th:nth-child(1), .attempts-table td:nth-child(1) {
+            width: 6%;
             white-space: nowrap;
-            min-width: 80px;
         }
-        .attempts-table td:nth-child(2) {
+        /* IP Address */
+        .attempts-table th:nth-child(2), .attempts-table td:nth-child(2) {
+            width: 8%;
             white-space: nowrap;
-            min-width: 100px;
         }
-        .attempts-table td:nth-child(3) {
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* Username */
+        .attempts-table th:nth-child(3), .attempts-table td:nth-child(3) {
+            width: 12%;
         }
-        .attempts-table td:nth-child(5) {
-            max-width: 500px;
-            min-width: 250px;
+        /* Detection Engine */
+        .attempts-table th:nth-child(4), .attempts-table td:nth-child(4) {
+            width: 8%;
+            text-align: center;
+        }
+        /* LLM Analysis / Status */
+        .attempts-table th:nth-child(5), .attempts-table td:nth-child(5) {
+            width: 22%;
+        }
+        /* Threat Type */
+        .attempts-table th:nth-child(6), .attempts-table td:nth-child(6) {
+            width: 12%;
+        }
+        /* Processing Time */
+        .attempts-table th:nth-child(7), .attempts-table td:nth-child(7) {
+            width: 9%;
+            white-space: nowrap;
+        }
+        /* LLM Raw Response */
+        .attempts-table th:nth-child(8), .attempts-table td:nth-child(8) {
+            width: 23%;
         }
         .status-badge {
             padding: 4px 8px;
@@ -295,7 +317,7 @@
     <div class="dashboard">
         <div class="header">
             <h1>🛡️ Threat Detection Monitor</h1>
-            <p>Pattern-based security analysis with real-time threat intelligence</p>
+            <p>LLM-powered security analysis with real-time threat intelligence</p>
         </div>
 
         <div id="metricsContainer" class="metrics-grid">
@@ -322,7 +344,7 @@
                         <th>LLM Analysis / Status</th>
                         <th>Threat Type</th>
                         <th>Processing Time</th>
-                        <th>Actions</th>
+                        <th>LLM Raw Response</th>
                     </tr>
                 </thead>
                 <tbody id="attemptsTableBody">
@@ -435,7 +457,7 @@
 
                 let engineBadge, statusDisplay;
 
-                if (analysis.detection_method === 'hybrid_ai_analysis') {
+                if (analysis.detection_method === 'llm_analysis' || analysis.detection_method === 'hybrid_ai_analysis') {
                     engineBadge = '<span class="status-badge status-ai">AI (PHI)</span>';
                 } else if (isRegex) {
                     engineBadge = '<span class="status-badge status-agent">REGEX</span>';
@@ -444,19 +466,23 @@
                 }
 
                 // Show LLM response if AI analysis, otherwise show status badge
-                if (analysis.detection_method === 'hybrid_ai_analysis' && analysis.ai_response) {
+                if ((analysis.detection_method === 'llm_analysis' || analysis.detection_method === 'hybrid_ai_analysis') && analysis.ai_response) {
                     // Truncate LLM response for table display
-                    const llmPreview = analysis.ai_response.substring(0, 150) + (analysis.ai_response.length > 150 ? '...' : '');
-                    statusDisplay = `<div style="font-size: 0.85em; color: #2c3e50; max-width: 400px; line-height: 1.4;">${llmPreview}</div>`;
+                    const llmPreview = analysis.ai_response.substring(0, 200) + (analysis.ai_response.length > 200 ? '...' : '');
+                    statusDisplay = `<div style="font-size: 0.85em; color: #2c3e50; line-height: 1.4; max-height: 80px; overflow-y: auto;">${llmPreview}</div>`;
                 } else if (isThreat) {
                     statusDisplay = '<span class="status-badge status-threat">THREAT</span>';
                 } else {
                     statusDisplay = '<span class="status-badge status-safe">SAFE</span>';
                 }
 
-                const viewButton = analysis.detection_method === 'hybrid_ai_analysis' ?
-                    `<button class="view-btn" onclick="viewThreatDetails(${index})">View Full</button>` :
-                    (isThreat ? '<button class="view-btn" disabled>Regex Match</button>' : '<button class="view-btn" disabled>No Threat</button>');
+                // Show full LLM raw response in the last column
+                let rawLLMResponse = 'N/A';
+                if (analysis.ai_response) {
+                    rawLLMResponse = `<div style="font-size: 0.8em; color: #2c3e50; max-height: 80px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; line-height: 1.3; padding: 6px; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6;">${analysis.ai_response}</div>`;
+                } else if (isRegex) {
+                    rawLLMResponse = '<span style="color: #999; font-style: italic;">Regex Detection (No LLM)</span>';
+                }
 
                 return `
                     <tr>
@@ -467,7 +493,7 @@
                         <td>${statusDisplay}</td>
                         <td>${analysis.threat_type || 'NONE'}</td>
                         <td>${processingTime}</td>
-                        <td>${viewButton}</td>
+                        <td>${rawLLMResponse}</td>
                     </tr>
                 `;
             }).join('');
@@ -487,11 +513,11 @@
 
             // Determine detection engine name
             let engineName = 'Unknown';
-            if (analysis.detection_method === 'hybrid_ai_analysis') {
+            if (analysis.detection_method === 'llm_analysis' || analysis.detection_method === 'hybrid_ai_analysis') {
                 engineName = 'AI (Phi-2.7b)';
             } else if (analysis.detection_method === 'security_signatures') {
                 engineName = 'Regex Patterns';
-            } else if (analysis.detection_method === 'legitimate_pattern_regex') {
+            } else if (analysis.detection_method === 'legitimate_pattern_regex' || analysis.detection_method === 'legitimate_pattern_whitelist') {
                 engineName = 'Legitimate Pattern (Whitelist)';
             }
 

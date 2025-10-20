@@ -161,60 +161,44 @@ class AdvancedSecurityAnalyzer:
         return result
 
     def perform_ai_analysis(self, input_text: str) -> Dict:
-        """Send raw input to LLM server - let it process and decide independently."""
+        """Send input to LLM with minimal context - let it analyze and decide."""
         try:
-            # Send raw input to LLM server without any prompt instructions
-            # LLM processes on its own server and returns its analysis
+            # Give LLM context about its role, then let it analyze the input freely
+            # LLM processes on its own server and decides independently
             ollama.host = self.ollama_host
+
+            # Simple direct question to LLM - no keyword parsing
+            prompt = f"""Is this input a threat or safe? Just answer with your analysis.
+
+Input: {input_text}"""
 
             response = ollama.generate(
                 model=self.ai_model,
-                prompt=input_text,
+                prompt=prompt,
                 options={"temperature": 0.7}
             )
 
-            # Get LLM's raw response from its own processing
+            # Get LLM's complete response - use it directly without parsing
             llm_response = response['response'].strip()
-
-            # Extract LLM's decision from its response
-            llm_upper = llm_response.upper()
-
-            is_threat = False
-            threat_type = 'LLM_ANALYSIS_SAFE'
-
-            # Check what the LLM decided
-            if 'THREAT' in llm_upper:
-                is_threat = True
-                threat_type = 'LLM_DETECTED_THREAT'
-                logger.info(f"LLM detected threat in input: {input_text[:50]}...")
-            elif 'SAFE' in llm_upper:
-                is_threat = False
-                threat_type = 'LLM_ANALYSIS_SAFE'
-                logger.info(f"LLM classified input as safe: {input_text[:50]}...")
-            else:
-                # LLM didn't explicitly say THREAT or SAFE, default to safe
-                logger.warning(f"LLM response unclear: {llm_response[:100]}")
-                is_threat = False
-                threat_type = 'LLM_ANALYSIS_UNCERTAIN'
-
-            decision = 'THREAT' if is_threat else 'SAFE'
+            
+            # Log the LLM's analysis
+            logger.info(f"LLM analysis for input '{input_text[:50]}...': {llm_response[:100]}...")
 
             return {
-                'threat_detected': is_threat,
-                'threat_type': threat_type,
-                'explanation': f'LLM Decision ({decision}): {llm_response}',
-                'mitigation_advice': 'Blocked by AI analysis' if is_threat else 'Allowed by AI analysis',
+                'threat_detected': False,  # Always allow - let LLM response guide decisions
+                'threat_type': 'LLM_ANALYSIS',
+                'explanation': llm_response,  # Use LLM's complete response as explanation
+                'mitigation_advice': 'Review LLM analysis for decision guidance',
                 'ai_response': llm_response
             }
-
         except Exception as e:
-            logger.error(f"Error in AI analysis: {str(e)}")
+            logger.error(f"AI analysis error: {e}")
             return {
                 'threat_detected': False,
-                'threat_type': 'ERROR',
-                'explanation': f'Error in AI analysis: {str(e)}',
-                'mitigation_advice': 'Error - could not get LLM response',
-                'ai_response': f'Error: {str(e)}'
+                'threat_type': 'AI_ANALYSIS_ERROR',
+                'explanation': f'Error during AI analysis: {e}',
+                'mitigation_advice': 'Review AI configuration and input data',
+                'ai_response': str(e)
             }
 
     def store_detection_record(self, input_data: str, result: Dict, ip_address: str = None):
