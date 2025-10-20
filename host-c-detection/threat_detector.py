@@ -168,7 +168,7 @@ class AdvancedSecurityAnalyzer:
             ollama.host = self.ollama_host
 
             # Simple direct question to LLM - no keyword parsing
-            prompt = f"""Is this input a threat or safe? Just answer with your analysis.
+            prompt = f"""You are a security analyst. Hackers are trying to hack the system or bypass the authentication. Now tell me Is this input a threat or safe?
 
 Input: {input_text}"""
 
