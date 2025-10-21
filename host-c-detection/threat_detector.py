@@ -130,8 +130,6 @@ class AdvancedSecurityAnalyzer:
             result = {
                 'threat_detected': False,
                 'threat_type': 'BENIGN_LOGIN',
-                'explanation': 'Detected legitimate login pattern',
-                'mitigation_advice': 'Input appears to be legitimate login attempt',
                 'detection_method': 'legitimate_pattern_whitelist',
                 'processing_time': processing_time,
                 'model_version': 'advanced-security-v1.0',
@@ -148,8 +146,6 @@ class AdvancedSecurityAnalyzer:
         result = {
             'threat_detected': ai_result['threat_detected'],
             'threat_type': ai_result['threat_type'],
-            'explanation': ai_result['explanation'],
-            'mitigation_advice': ai_result['mitigation_advice'],
             'detection_method': 'llm_analysis',
             'processing_time': total_processing_time,
             'model_version': 'advanced-security-v1.0',
@@ -161,34 +157,51 @@ class AdvancedSecurityAnalyzer:
         return result
 
     def perform_ai_analysis(self, input_text: str) -> Dict:
-        """Send input to LLM with minimal context - let it analyze and decide."""
+        """Send input to LLM with structured JSON output for reliable parsing."""
         try:
-            # Give LLM context about its role, then let it analyze the input freely
-            # LLM processes on its own server and decides independently
+            # Give LLM context and request structured JSON response
             ollama.host = self.ollama_host
 
-            # Simple direct question to LLM - no keyword parsing
-            prompt = f"""You are a security analyst. Hackers are trying to hack the system or bypass the authentication. Now tell me Is this input a threat or safe?
+            # Force structured JSON output with security context
+            prompt = f"""You are a cybersecurity expert analyzing login inputs for security threats.
 
-Input: {input_text}"""
+Analyze this login input and respond ONLY with valid JSON:
+
+Input: "{input_text}"
+
+Response format (no other text):
+{{"decision": "THREAT"}} OR {{"decision": "SAFE"}}"""
 
             response = ollama.generate(
                 model=self.ai_model,
                 prompt=prompt,
-                options={"temperature": 0.7}
+                options={"temperature": 0.0}  # Set to 0 for deterministic output
             )
 
-            # Get LLM's complete response 
+            # Get LLM's complete response
             llm_response = response['response'].strip()
-            
-            # Log the LLM's analysis
-            logger.info(f"LLM analysis for input '{input_text[:50]}...': {llm_response[:100]}...")
+
+            # Log the raw LLM response
+            logger.info(f"LLM raw response for input '{input_text[:50]}...': {llm_response}")
+
+            # Parse JSON response
+            try:
+                import json
+                decision_data = json.loads(llm_response)
+                decision = decision_data.get('decision', '').upper()
+            except json.JSONDecodeError:
+                # Fallback: if JSON parsing fails, check for keywords
+                logger.warning(f"Failed to parse JSON, falling back to keyword search: {llm_response}")
+                decision = 'THREAT' if 'THREAT' in llm_response.upper() else 'SAFE'
+
+            # Determine if a threat is detected
+            threat_detected = decision == 'THREAT'
+
+            logger.info(f"LLM decision for input '{input_text[:50]}...': {decision}")
 
             return {
-                'threat_detected': False,  # Always allow - let LLM response guide decisions
-                'threat_type': 'LLM_ANALYSIS',
-                'explanation': llm_response,  # Use LLM's complete response as explanation
-                'mitigation_advice': 'Review LLM analysis for decision guidance',
+                'threat_detected': threat_detected,
+                'threat_type': 'LLM_DETECTED_THREAT' if threat_detected else 'LLM_ANALYSIS_SAFE',
                 'ai_response': llm_response
             }
         except Exception as e:
@@ -196,9 +209,7 @@ Input: {input_text}"""
             return {
                 'threat_detected': False,
                 'threat_type': 'AI_ANALYSIS_ERROR',
-                'explanation': f'Error during AI analysis: {e}',
-                'mitigation_advice': 'Review AI configuration and input data',
-                'ai_response': str(e)
+                'ai_response': f'Error: {str(e)}'
             }
 
     def store_detection_record(self, input_data: str, result: Dict, ip_address: str = None):

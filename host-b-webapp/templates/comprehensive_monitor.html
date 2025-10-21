@@ -521,11 +521,10 @@
                 engineName = 'Legitimate Pattern (Whitelist)';
             }
 
-            // Get explanation - handle various field names
-            const explanation = analysis.explanation ||
-                              analysis.ai_explanation ||
-                              analysis.reasoning ||
-                              'No detailed explanation available';
+            // Use ai_response as the explanation since that's the actual LLM output
+            const explanation = analysis.ai_response ||
+                              analysis.explanation ||
+                              'No LLM response available';
 
             // Get processing time - handle various field names
             const processingTime = analysis.detection_latency ||
