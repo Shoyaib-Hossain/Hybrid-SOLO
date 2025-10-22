@@ -102,7 +102,7 @@ class AuthenticationTracker:
             response = requests.post(
                 SECURITY_DETECTION_URL,
                 json=analysis_request,
-                timeout=30
+                timeout=90
             )
 
             # Process threat analysis response

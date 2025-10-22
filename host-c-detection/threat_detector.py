@@ -45,7 +45,7 @@ class AdvancedSecurityAnalyzer:
     def __init__(self):
         """Initialize the security analyzer with AI configuration and legitimate login patterns."""
         # AI Configuration - AWS Remote LLM
-        self.ollama_host = os.getenv('OLLAMA_HOST', 'http://98.92.213.6:11434')
+        self.ollama_host = os.getenv('OLLAMA_HOST', 'http://54.83.245.211:11434')
         self.ai_model = os.getenv('OLLAMA_MODEL', 'codellama:13b')
 
         # Legitimate authentication patterns (whitelist)
@@ -185,14 +185,9 @@ Response format (no other text):
             logger.info(f"LLM raw response for input '{input_text[:50]}...': {llm_response}")
 
             # Parse JSON response
-            try:
-                import json
-                decision_data = json.loads(llm_response)
-                decision = decision_data.get('decision', '').upper()
-            except json.JSONDecodeError:
-                # Fallback: if JSON parsing fails, check for keywords
-                logger.warning(f"Failed to parse JSON, falling back to keyword search: {llm_response}")
-                decision = 'THREAT' if 'THREAT' in llm_response.upper() else 'SAFE'
+            import json
+            decision_data = json.loads(llm_response)
+            decision = decision_data.get('decision', '').upper()
 
             # Determine if a threat is detected
             threat_detected = decision == 'THREAT'
@@ -207,7 +202,7 @@ Response format (no other text):
         except Exception as e:
             logger.error(f"AI analysis error: {e}")
             return {
-                'threat_detected': False,
+                'threat_detected': None,
                 'threat_type': 'AI_ANALYSIS_ERROR',
                 'ai_response': f'Error: {str(e)}'
             }
