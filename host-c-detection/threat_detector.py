@@ -44,9 +44,9 @@ class AdvancedSecurityAnalyzer:
 
     def __init__(self):
         """Initialize the security analyzer with AI configuration and legitimate login patterns."""
-        # AI Configuration
-        self.ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-        self.ai_model = os.getenv('OLLAMA_MODEL', 'phi:2.7b')
+        # AI Configuration - AWS Remote LLM
+        self.ollama_host = os.getenv('OLLAMA_HOST', 'http://98.92.213.6:11434')
+        self.ai_model = os.getenv('OLLAMA_MODEL', 'codellama:13b')
 
         # Legitimate authentication patterns (whitelist)
         self.legitimate_auth_patterns = {
@@ -159,8 +159,8 @@ class AdvancedSecurityAnalyzer:
     def perform_ai_analysis(self, input_text: str) -> Dict:
         """Send input to LLM with structured JSON output for reliable parsing."""
         try:
-            # Give LLM context and request structured JSON response
-            ollama.host = self.ollama_host
+            # Create Ollama client with remote host
+            client = ollama.Client(host=self.ollama_host)
 
             # Force structured JSON output with security context
             prompt = f"""You are a cybersecurity expert analyzing login inputs for security threats.
@@ -172,7 +172,7 @@ Input: "{input_text}"
 Response format (no other text):
 {{"decision": "THREAT"}} OR {{"decision": "SAFE"}}"""
 
-            response = ollama.generate(
+            response = client.generate(
                 model=self.ai_model,
                 prompt=prompt,
                 options={"temperature": 0.0}  # Set to 0 for deterministic output
