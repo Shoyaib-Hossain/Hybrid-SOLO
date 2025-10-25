@@ -1,12 +1,12 @@
 """
-LLM-Based Threat Detection System
-----------------------------------
-This module implements an LLM-powered security threat detection system:
+LLM-Based SQL Injection Detection System
+-----------------------------------------
+This module implements an LLM-powered SQL injection detection system:
 1. Whitelist check for legitimate login credentials (bypass LLM)
-2. AI/LLM-based analysis for all other inputs (LLM decides independently)
+2. AI/LLM-based SQL injection detection for all other inputs
 
-The LLM analyzes user inputs and determines if they are THREAT or SAFE.
-All security decisions are made by the LLM server without preset patterns.
+The LLM specifically analyzes inputs to detect SQL injection attempts.
+Focus: SQL injection detection only, not general security threats.
 """
 
 from flask import Flask, request, jsonify
@@ -30,16 +30,16 @@ logger = logging.getLogger(__name__)
 
 class AdvancedSecurityAnalyzer:
     """
-    Advanced Security Analyzer - LLM-Based Threat Detection Engine
+    Advanced Security Analyzer - LLM-Based SQL Injection Detection Engine
 
-    LLM-powered threat detection:
+    LLM-powered SQL injection detection:
     - Whitelist Check: Bypass LLM for known legitimate logins
-    - AI/LLM Analysis: All other inputs analyzed by LLM server
+    - AI/LLM Analysis: All other inputs analyzed for SQL injection
 
     Detection Flow:
     1. Input normalization
     2. Whitelist check (legitimate logins bypass LLM)
-    3. LLM analysis (LLM decides THREAT or SAFE independently)
+    3. LLM SQL injection detection (LLM decides YES or NO for SQL injection)
     """
 
     def __init__(self):
@@ -110,12 +110,12 @@ class AdvancedSecurityAnalyzer:
 
     def comprehensive_security_scan(self, input_text: str, ip_address: str = None) -> Optional[Dict]:
         """
-        Perform security threat analysis with LLM-based detection.
+        Perform SQL injection detection with LLM-based analysis.
 
         Detection Flow:
         1. Input Normalization
         2. Whitelist Check (legitimate logins bypass LLM)
-        3. LLM Analysis (all other inputs sent to LLM server)
+        3. LLM SQL Injection Detection (all other inputs sent to LLM server)
         """
         start_time = time.time()
 
@@ -157,20 +157,18 @@ class AdvancedSecurityAnalyzer:
         return result
 
     def perform_ai_analysis(self, input_text: str) -> Dict:
-        """Send input to LLM with structured JSON output for reliable parsing."""
+        """Send input to LLM to detect SQL injection attempts specifically."""
         try:
             # Create Ollama client with remote host
             client = ollama.Client(host=self.ollama_host)
 
-            # Force structured JSON output with security context
-            prompt = f"""You are a cybersecurity expert analyzing login inputs for security threats.
-
-Analyze this login input and respond ONLY with valid JSON:
+            # Specific prompt focused on SQL injection detection only
+            prompt = f"""Is this a SQL injection attempt?
 
 Input: "{input_text}"
 
-Response format (no other text):
-{{"decision": "THREAT"}} OR {{"decision": "SAFE"}}"""
+Respond with ONLY valid JSON (no other text):
+{{"sql_injection": "YES"}} OR {{"sql_injection": "NO"}}"""
 
             response = client.generate(
                 model=self.ai_model,
@@ -187,23 +185,20 @@ Response format (no other text):
             # Parse JSON response
             import json
             decision_data = json.loads(llm_response)
-            decision = decision_data.get('decision', '').upper()
+            sql_injection_detected = decision_data.get('sql_injection', '').upper() == 'YES'
 
-            # Determine if a threat is detected
-            threat_detected = decision == 'THREAT'
-
-            logger.info(f"LLM decision for input '{input_text[:50]}...': {decision}")
+            logger.info(f"LLM SQL injection detection for input '{input_text[:50]}...': {'YES' if sql_injection_detected else 'NO'}")
 
             return {
-                'threat_detected': threat_detected,
-                'threat_type': 'LLM_DETECTED_THREAT' if threat_detected else 'LLM_ANALYSIS_SAFE',
+                'threat_detected': sql_injection_detected,
+                'threat_type': 'SQL_INJECTION_DETECTED' if sql_injection_detected else 'NO_SQL_INJECTION',
                 'ai_response': llm_response
             }
         except Exception as e:
-            logger.error(f"AI analysis error: {e}")
+            logger.error(f"AI SQL injection analysis error: {e}")
             return {
                 'threat_detected': None,
-                'threat_type': 'AI_ANALYSIS_ERROR',
+                'threat_type': 'SQL_INJECTION_ANALYSIS_ERROR',
                 'ai_response': f'Error: {str(e)}'
             }
 
@@ -261,11 +256,11 @@ security_analyzer = AdvancedSecurityAnalyzer()
 @app.route('/analyze', methods=['POST'])
 def execute_security_analysis():
     """
-    Main threat detection API endpoint.
+    Main SQL injection detection API endpoint.
 
     POST /analyze
     Request body: {"input": "user input to analyze", "ip_address": "optional"}
-    Response: JSON with detection results
+    Response: JSON with SQL injection detection results
     """
     start_time = time.time()
 
@@ -277,7 +272,7 @@ def execute_security_analysis():
         if not user_input:
             return jsonify({'error': 'No input provided'}), 400
 
-        # Perform threat analysis
+        # Perform SQL injection detection
         hybrid_result = security_analyzer.comprehensive_security_scan(user_input, ip_address)
 
         # Add metadata
@@ -454,18 +449,18 @@ def service_health_status():
     """Health check endpoint for monitoring and load balancers."""
     return jsonify({
         'status': 'healthy',
-        'service': 'advanced-security',
-        'mode': 'llm-based-detection'
+        'service': 'sql-injection-detector',
+        'mode': 'llm-based-sql-injection-detection'
     })
 
 
 if __name__ == '__main__':
-    print("🚀 Starting Advanced Security Detection Service...")
-    print("🤖 LLM-based detection: All inputs analyzed by AI")
-    print("💡 Detection flow: Whitelist check → LLM decides (THREAT or SAFE)")
+    print("🚀 Starting SQL Injection Detection Service...")
+    print("🤖 LLM-based detection: Specifically detects SQL injection attacks")
+    print("💡 Detection flow: Whitelist check → LLM answers: Is this SQL injection?")
     print("🌐 Server listening on http://0.0.0.0:8081")
     print("\n📋 Available endpoints:")
-    print("   POST   /analyze              - Analyze input for threats")
+    print("   POST   /analyze              - Analyze input for SQL injection")
     print("   GET    /stats                - Get statistics (JSON)")
     print("   GET    /detailed-requests    - Get detection records")
     print("   POST   /clear-data           - Clear all records")
